@@ -1,0 +1,244 @@
+------- SISTEME DE OPERARE -------
+---- TEMA 2. Biblioteca stdio ----
+
+  ██████  ▒█████  
+▒██    ▒ ▒██▒  ██▒
+░ ▓██▄   ▒██░  ██▒
+  ▒   ██▒▒██   ██░
+▒██████▒▒░ ████▓▒░
+▒ ▒▓▒ ▒ ░░ ▒░▒░▒░ 
+░ ░▒  ░ ░  ░ ▒ ▒░ 
+░  ░  ░  ░ ░ ░ ▒  
+      ░      ░ ░  
+
+Cuprins:
+	1. Biblioteci si define-uri.........................Linia  44
+	2. Modularizare.....................................Linia  62
+		2.1. Tipuri de date.............................Linia  66
+			2.1.1. Structura "SO_FILE"..................Linia  69
+			2.1.2. Structura "string_int_mapping".......Linia  89
+		2.2. Functii auxiliare..........................Linia  96
+			2.2.1. Functia "init_stream"................Linia  99
+			2.2.2. Functia "reset_buffer"...............Linia 106
+		2.3. Functii principale.........................Linia 112
+			2.3.01. Functia "so_fopen"..................Linia 115
+			2.3.02. Functia "so_fclose".................Linia 125
+			2.3.03. Functia "so_fileno".................Linia 132
+			2.3.04. Functia "so_fflush".................Linia 137
+			2.3.05. Functia "so_fseek"..................Linia 146
+			2.3.06. Functia "so_ftell"..................Linia 167
+			2.3.07. Functia "so_fread"..................Linia 174
+			2.3.08. Functia "so_fwrite".................Linia 183
+			2.3.09. Functia "so_fgetc"..................Linia 189
+			2.3.10. Functia "so_fputc"..................Linia 200
+			2.3.11. Functia "so_feof"...................Linia 212
+			2.3.12. Functia "so_ferror".................Linia 218
+			2.3.13. Functia "so_popen"..................Linia 224
+			2.3.14. Functia "so_pclose".................Linia 238
+	3. Alte detalii.....................................Linia 245
+
+=== =========================== ===
+=== 1. Biblioteci si define-uri ===
+=== =========================== ===
+
+Folosesc "string.h" pentru lucrul cu string-uri (in principiu functia 'strcmp'),
+si biblioteci pentru system call-urile aferente scrierii si citirii din fisiere.
+
+Define-uri:
+	BUFSIZE -> Capacitatea buffer-ului folosit in stream-uri.
+	DEFAULT_PERMS -> Permisiunile unui fisier care este creat daca
+		e cazul.
+
+	TRUE si FALSE -> Pentru a simula valori boolene in cadrul codului.
+
+	OP_TYPE_* -> Tipuri de operatii. In cadrul unei operatii se poate testa
+		tipul celei precedente, pentru a face modificarile necesare.
+
+
+=== =============== ===
+=== 2. Modularizare ===
+=== =============== ===
+
+--- ------------------- ---
+--- 2.1. Tipuri de date ---
+--- ------------------- ---
+
+=== 2.1.1. Structura "SO_FILE" ===
+
+Prezinta detaliile de care are nevoie un stream pentru a fi identificat si a
+functiona in mod corespunzator.
+
+El prezinta in prim-plan un file descriptor asupra caruia actioneaza, alaturi
+de un buffer ce permite mai putine apeluri de sistem de scriere sau citire.
+
+O astfel de operatie schimba cursorul file descriptor-ului gestionat de sistem,
+de aceea exista un field "expected_cursor" ce reprezinta valoarea la care un
+utilizator s-ar astepta sa gaseasca cursorul file descriptor-ului. El este
+actualizat aferent in functie de operatie.
+
+Sunt prezente flag-uri de acces rapid pentru fisier, precum modul de deschidere
+al lui, si flag-uri si campuri de stare ale stream-ului (EOF, ERR etc.).
+
+Mai exista si un PID optional ce reprezinta ID-ul procesului pe care stream-ul
+va trebui sa il astepte (README: Linia 224).
+
+
+=== 2.1.2. Structura "string_int_mapping" ===
+
+O pereche formata din doua campuri, un string si un flag. Aceasta este folosita
+in Functia "so_fopen" (README: Linia 115).
+
+
+--- ---------------------- ---
+--- 2.2. Functii auxiliare ---
+--- ---------------------- ---
+
+=== 2.2.1. Functia "init_stream" ===
+
+Functia primeste toate argumentele de care un stream are nevoie pentru a fi
+initializat. Se aloca memoria necesara si se seteaza flag-urile aferente.
+In cazul unui esec, memoria este dezalocata in mod corespunzator.
+
+
+=== 2.2.2. Functia "reset_buffer" ===
+
+Functia reseteaza buffer-ul unui stream, stergand tot continutul acestuia.
+
+
+--- ----------------------- ---
+--- 2.3. Functii principale ---
+--- ----------------------- ---
+
+=== 2.3.01. Functia "so_fopen" ===
+
+Functia incepe prin a deschide un nou fisier in modul dorit. Flag-urile de
+deschidere se obtin dintr-o mapare dintre un string (modul) si flag-urile
+aferente.
+
+Se initializeaza astfel un stream, fara PID, cu ajutorul
+functiei "init_stream".
+
+
+=== 2.3.02. Functia "so_fclose" ===
+
+Functia incearca sa apeleze "so_fflush" pe stream daca este cazul
+si sa inchida file descriptor-ul aferent lui. Se elibereaza
+memoria ocupata de acesta, astfel eliminand complet stream-ul.
+
+
+=== 2.3.03. Functia "so_fileno" ===
+
+Functia pur si simplu returneaza file descriptor-ul aferent unui stream.
+
+
+=== 2.3.04. Functia "so_fflush" ===
+
+Apelata de obicei dupa o scriere, functia scrie continutul buffer-ului in
+fisierul aferent stream-ului. Buffer-ul devine gol in urma acestei operatii.
+
+Se verifica permisiuni precum cea de scriere, si daca scrierea in fisier a avut
+loc cu succes.
+
+
+=== 2.3.05. Functia "so_fseek" ===
+
+Repozitioneaza cursorul aferent file descriptor-ului stream-ului. Diferenta fata
+de un apel de sistem o constituie prezenta buffer-ului, ceea ce implica
+existenta unui cursor "real", asteptat, diferit de cel gestionat de sistemul
+de operare.
+
+In urma unei operatii de write, ne asteptam ca orice operatie ulterioara sa
+se comporte de parca write-ul chiar a avut loc, de aceea realizam un flush
+al buffer-ului.
+
+In urma unei operatii de read, nu mai are sens sa pastram buffer-ul intrucat
+vom citi din alta parte cel mai probabil. In plus, daca se doreste o operatie
+de "so_fseek" relativa la pozitia curenta a cursorului ("SEEK_CUR"), aceasta
+trebuie sa fie relativa de fapt la pozitia "reala" a cursorului
+("expected_cursor").
+
+Intr-un final, se realizeaza operatia propriu zisa, setand si cursorul "real"
+la valoarea adecvata.
+
+
+=== 2.3.06. Functia "so_ftell" ===
+
+Avand in vedere existenta si gestionarea campului "expected_cursor", acesta
+reprezinta exact valoarea la care se asteapta un utilizator, prin urmare aceasta
+functie pur si simplu o returneaza.
+
+
+=== 2.3.07. Functia "so_fread" ===
+
+Functia incearca sa citeasca un anumit numar de octeti, apeland la functia
+"so_fgetc" pentru a realiza aceasta operatie caracter cu caracter.
+Fiecare caracter este scris la adresa specificata.
+
+In cazul in care s-a ajuns la sfarsitul fisierului, functia se opreste.
+
+
+=== 2.3.08. Functia "so_fwrite" ===
+
+Functia actioneaza similar "so_fread"-ului, cu precizarea ca se foloseste de
+functia "so_fputc", si nu e nevoie de vreo verificare a sfarsitului fisierului.
+
+
+=== 2.3.09. Functia "so_fgetc" ===
+
+Daca aceasta operatie de citire urmeaza dupa o scriere, se realizeaza un flush
+al, buffer-ului, pentru a ajunge la pozitia la care ne asteptam sa ne aflam in
+cadrul fisierului.
+
+Functia returneaza urmatorul caracter din buffer, avansand pozitia acestuia.
+
+In cazul in care buffer-ul este gol, se populeaza printr-o citire din fisier.
+
+
+=== 2.3.10. Functia "so_fputc" ===
+
+Daca aceasta operatie de scriere urmeaza dupa o citire, cursorul file
+descriptor-ului trebuie repozitionat in mod aferent. Daca fisierul este
+deschis in modul "append", cursorul este repozitionat la sfarsitul acestuia.
+Altfel, cursorul trebuie mutat la cel "real", la care ne-am astepta sa continue
+scrierea. Buffer-ul este asadar resetat.
+
+Functia scrie caracterul primit in buffer, apeland un flush asupra acestuia in
+cazul in care se umple.
+
+
+=== 2.3.11. Functia "so_feof" ===
+
+Functia returneaza daca s-a ajuns la sfarsitul fisierului in urma ultimei
+operatii.
+
+
+=== 2.3.12. Functia "so_ferror" ===
+
+Functia returneaza starea de eroare a stream-ului, setata aferent in fiecare
+functie.
+
+
+=== 2.3.13. Functia "so_popen" ===
+
+Functia porneste un pipe intre doua procese, printr-un fork al celui curent.
+
+Procesul parinte si cel copil vor fi intr-un pipe de read-write.
+
+Rolul parintelui este de a initializa stream-ul, inchizand file descriptor-ul
+ce nu e aferent modului.
+
+Rolul copilului este de a face file descriptor-ul antepus sa corespunda intrarii
+sau iesirii standard. Pe langa asta, copilul este cel ce executa comanda
+data drept parametru.
+
+
+=== 2.3.14. Functia "so_pclose" ===
+
+Functia se foloseste de "so_fclose" pentru a elibera resursele folosite de
+stream. In plus, se asteapta ca procesul aferent stream-ului sa se termine.
+
+
+=== =============== ===
+=== 3. Alte detalii ===
+=== =============== ===
+	Compilez cu -Wall si -Wextra.
